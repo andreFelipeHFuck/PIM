@@ -1,4 +1,5 @@
 import numpy as np
+from math import ceil
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -60,7 +61,7 @@ def zero_frame(im:object)->object:
                 out.putpixel((i, j), 0)
             else:
                 out.putpixel((i, j), im.getpixel((i - 2, j - 2)))
-    return out
+    return out 
 
 def NO(im:object, coordinate:tuple, size:int)->bool:
     (i, j) = coordinate
@@ -128,9 +129,9 @@ def calculate_coordinate(im, coordinate:tuple, size:int)->bool:
     return True in list_pixels
 
 def lettering_counting(im:object)->tuple:
-    list_components = [1]
-
     (l, h) = im.size
+
+    list_components = [1]
 
     out = Image.new(mode='L', size=(l, h))
 
@@ -139,7 +140,7 @@ def lettering_counting(im:object)->tuple:
     for j in range(1, h - 1):
         for i in range(1, l - 1):
             if calculate_coordinate(im, (i, j), 255):
-                out.putpixel((i, j), 106 + components)
+                out.putpixel((i, j), 100 + components)
             elif im.getpixel((i, j)) != 0:
                 components += 1
                 list_components.append(components)
@@ -147,11 +148,80 @@ def lettering_counting(im:object)->tuple:
 
     return (out, list_components)
 
-def identifica_side(im:object)->list:
+def identifica_side(im:object)->set:
     list_component = []
+
+    (l, h) = im.size
+    
+    for i in range(1, l - 1):
+        if calculate_coordinate(im, (i, 1), 0) and im.getpixel((i, 1)) != 0:
+            list_component.append(im.getpixel((i, 1)))
+        
+        if calculate_coordinate(im, (i, h - 2), 0) and im.getpixel((i, h - 2)) != 0:
+            list_component.append(im.getpixel((i, h - 2)))
+
+    
+    for j in range(1, h - 1):
+        if calculate_coordinate(im, (1, j), 0) and im.getpixel((1, j)) != 0:
+            list_component.append(im.getpixel((1, j)))
+        
+        if calculate_coordinate(im, (l - 2, j), 0) and im.getpixel((l - 2, j)) != 0:
+            list_component.append(im.getpixel((l - 2, j)))
+
+    return set(list_component)
     
 def remove_side_component(im:object, list_componentes:list)->object:
-    ...
+    (l, h) = im.size
+
+    out = Image.new(mode='L', size=(l, h))
+                    
+    for j in range(0, h):
+        for i in range(0, l):
+            if im.getpixel((i, j)) in list_componentes:
+                out.putpixel((i, j), 0)
+            else:
+                out.putpixel((i, j), im.getpixel((i, j)))
+    
+    return out
+
+def max_component(im:object, list_components:list)->int:
+    (l, h) = im.size 
+    dict_components = {}
+
+    for i in list_components:
+        dict_components[i + 100] = 0
+
+    for j in range(0, h):
+        for i in range(0, l):
+            if im.getpixel((i, j)) != 0:
+                dict_components[im.getpixel((i, j))] += 1
+
+    return list(dict_components.keys())[list(dict_components.values()).index(max(dict_components.values()))]
+
+def center_of_mass_image(im:object, list_components:list)->tuple:
+    (l, h) = im.size
+
+    max_value = max_component(im, list_components)
+
+    sum_x = 0
+    cont_x = 0
+
+    sum_y = 0
+    cont_y = 0
+
+    for j in range(0, h):
+        for i in range(0, l):
+            if im.getpixel((i, j)) == max_value:
+                sum_y += j
+                cont_y += 1
+
+    for i in range(0, l):
+        for j in range(0, h):
+            if im.getpixel((i, j)) == max_value:
+                sum_x += i
+                cont_x += 1
+        
+    return (ceil(sum_x/cont_x), ceil(sum_y/cont_y))
 
 def open_image(im:str, gray:bool = True)->object:
     return imread(im, as_gray=gray)
@@ -168,9 +238,27 @@ if __name__ == "__main__":
     zero_image.save("results/zero_image.jpg")
 
     (components_image, list_components) = lettering_counting(zero_image)
+    
+    list_components_side = list(identifica_side(components_image))
 
-    print(list_components)
+    remove_side_component_image = remove_side_component(components_image, list_components_side)
 
-    plt.imshow(components_image)
-    plt.savefig("results/components_image.jpg")
+    print(max_component(remove_side_component_image, list_components))
+
+    (i, j) = center_of_mass_image(remove_side_component_image, list_components)
+    print(i, j)
+
+    remove_side_component_image.putpixel((i, j), 255)
+
+    for k in range(1, 5):
+        remove_side_component_image.putpixel((i, j + k), 255)
+        remove_side_component_image.putpixel((i, j - k), 255)
+        remove_side_component_image.putpixel((i + k, j), 255)
+        remove_side_component_image.putpixel((i - k, j), 255)
+
+    plt.imshow(remove_side_component_image)
+
+    plt.savefig("results/center_of_mass_image.jpg")
+    remove_side_component_image.save("results/center_of_mass_image.jpg")
+
     plt.show()
