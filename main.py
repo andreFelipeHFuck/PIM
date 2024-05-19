@@ -242,6 +242,7 @@ if __name__ == "__main__":
     list_components_side = list(identifica_side(components_image))
 
     remove_side_component_image = remove_side_component(components_image, list_components_side)
+    remove_side_component_image.save("results/remove_side_component_image.jpg")
 
     print(max_component(remove_side_component_image, list_components))
 
