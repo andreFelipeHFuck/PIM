@@ -11,7 +11,9 @@ from PIL import Image
 
 from collections import deque
 
-PATH = "solda.png"
+PATH_SOLDA = "solda.png"
+PATH_PARTICULA = "particulas_.png"
+PATH_BOLINHAS = "Fig9_43_GW.jpg"
 
 def otsu_histogram(im:object, thresholds: tuple):
     ...
@@ -39,9 +41,9 @@ def binary_threshold(im:object)->object:
     return out
 
 def threshold(im:object)->object:
-    thresholds = threshold_multiotsu(im)
+    thresholds = threshold_multiotsu(im, classes=3)
 
-    regions = np.digitize(image, bins=thresholds)
+    regions = np.digitize(im, bins=thresholds)
 
     return binary_threshold(regions)
 
@@ -252,35 +254,30 @@ def center_of_mass_image(im:object, list_components:list)->tuple:
 
 def psudo_color(im: object):
     ...
-    
-def main(file: str):
-    ...
 
 def open_image(im:str, gray:bool = True)->object:
     return imread(im, as_gray=gray)
-
-
-
-if __name__ == "__main__":
-    image = open_image(PATH, True)
+    
+def main(path:str, file:str)->None:
+    image = open_image(path, True)
 
     threshold_image = threshold(image)
 
-    threshold_image.save("results/binary_threshold.jpg")
+    threshold_image.save(f'results/{file}_binary_threshold.jpg')
 
     zero_image = zero_frame(threshold_image)
 
-    zero_image.save("results/zero_image.jpg")
+    zero_image.save(f'results/{file}_zero_image.jpg')
 
     (components_image, list_components) = lettering_counting(zero_image)
 
-    components_image.save("results/components_threshold.jpg")
+    components_image.save(f'results/{file}_components_threshold.jpg')
     
     list_components_side = list(identifica_side(components_image))
     # print(list_components_side)
 
     remove_side_component_image = remove_side_component(components_image, list_components_side)
-    remove_side_component_image.save("results/remove_side_component_image.jpg")
+    remove_side_component_image.save(f'results/{file}_remove_side_component_image.jpg')
 
     # print(max_component(remove_side_component_image, list_components))
 
@@ -297,7 +294,11 @@ if __name__ == "__main__":
 
     plt.imshow(remove_side_component_image)
 
-    plt.savefig("results/center_of_mass_image.jpg")
-    remove_side_component_image.save("results/center_of_mass_image.jpg")
+    plt.savefig(f'results/{file}_center_of_mass_image.jpg')
+    remove_side_component_image.save(f'results/{file}_center_of_mass_image.jpg')
 
     plt.show()
+
+if __name__ == "__main__":
+   main(PATH_SOLDA, "solda")
+
