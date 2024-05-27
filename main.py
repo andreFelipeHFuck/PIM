@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from skimage.io import imread
+from skimage import data
 from skimage.filters import threshold_multiotsu
 
 from PIL import Image
@@ -15,8 +16,32 @@ PATH_SOLDA = "solda.png"
 PATH_PARTICULA = "particulas_.png"
 PATH_BOLINHAS = "Fig9_43_GW.jpg"
 
-def otsu_histogram(im:object, thresholds: tuple):
-    ...
+def otsu_histogram(im:object):
+    matplotlib.rcParams['font.size'] = 9
+
+    thresholds = threshold_multiotsu(im, classes=2)
+
+    regions = np.digitize(im, bins=thresholds)
+
+    fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 3.5))
+
+    ax[0].imshow(im, cmap='gray')
+    ax[0].set_title('Imagem original')
+    ax[0].axis('off')
+
+
+    ax[1].hist(im.ravel(), bins=255)
+    ax[1].set_title('Histograma')
+    for thresh in thresholds:
+        ax[1].axvline(thresh, color='r')
+
+    ax[2].imshow(regions, cmap='jet')
+    ax[2].set_title('Multi-Otsu Resultado')
+    ax[2].axis('off')
+
+    plt.subplots_adjust()
+
+    plt.show()
 
 def binary_threshold(im:object)->object:
     image = Image.fromarray(np.uint8(im)).convert('L')
@@ -41,7 +66,7 @@ def binary_threshold(im:object)->object:
     return out
 
 def threshold(im:object)->object:
-    thresholds = threshold_multiotsu(im, classes=3)
+    thresholds = threshold_multiotsu(im, classes=2)
 
     regions = np.digitize(im, bins=thresholds)
 
@@ -156,10 +181,10 @@ def dfs(im:object, out:object, coordinate:tuple, components:int)->set:
 
     return set_coordinates
 
-def lettering_counting(im:object)->tuple:
+def segmentation_by_area(im:object)->tuple:
     (l, h) = im.size
 
-    components = 10
+    components = 50
 
     list_components:list = [components]
     set_coordinates:set = set()
@@ -220,6 +245,7 @@ def max_component(im:object, list_components:list)->int:
     for i in list_components:
         dict_components[i] = 0
 
+
     for j in range(0, h):
         for i in range(0, l):
             if im.getpixel((i, j)) != 0:
@@ -244,40 +270,52 @@ def center_of_mass_image(im:object, list_components:list)->tuple:
                 sum_y += j
                 cont_y += 1
 
-    for i in range(0, l):
-        for j in range(0, h):
-            if im.getpixel((i, j)) == max_value:
                 sum_x += i
                 cont_x += 1
+            else:
+                im.putpixel((i, j), 0)
         
     return (ceil(sum_x/cont_x), ceil(sum_y/cont_y))
 
-def psudo_color(im: object):
-    ...
+def psudo_color(im: object, output_path:str)->None:
+    normalized_array  = np.array(im)
+
+    colormap = np.zeros((256, 3), dtype=np.uint8)
+    for i in range(256):
+        r = int(255 * (i / 255.0))
+        g = int(255 * (1 - abs((i / 127.5) - 1)))
+        b = int(255 * (1 - i / 255.0))
+        colormap[i] = [r, g, b]
+    
+    pseudo_color_image = colormap[normalized_array]
+    
+    pseudo_color_image = Image.fromarray(pseudo_color_image, 'RGB')
+    
+    pseudo_color_image.save(output_path)
 
 def open_image(im:str, gray:bool = True)->object:
     return imread(im, as_gray=gray)
     
-def main(path:str, file:str)->None:
+def main(path:str, result_file_name:str)->None:
     image = open_image(path, True)
 
     threshold_image = threshold(image)
 
-    threshold_image.save(f'results/{file}_binary_threshold.jpg')
+    threshold_image.save(f'results/{result_file_name}_binary_threshold.jpg')
 
     zero_image = zero_frame(threshold_image)
 
-    zero_image.save(f'results/{file}_zero_image.jpg')
+    zero_image.save(f'results/{result_file_name}_zero_image.jpg')
 
-    (components_image, list_components) = lettering_counting(zero_image)
+    (components_image, list_components) = segmentation_by_area(zero_image)
 
-    components_image.save(f'results/{file}_components_threshold.jpg')
+    psudo_color(components_image ,f'results/{result_file_name}_components_threshold.jpg')
     
     list_components_side = list(identifica_side(components_image))
     # print(list_components_side)
 
     remove_side_component_image = remove_side_component(components_image, list_components_side)
-    remove_side_component_image.save(f'results/{file}_remove_side_component_image.jpg')
+    remove_side_component_image.save(f'results/{result_file_name}_remove_side_component_image.jpg')
 
     # print(max_component(remove_side_component_image, list_components))
 
@@ -294,11 +332,11 @@ def main(path:str, file:str)->None:
 
     plt.imshow(remove_side_component_image)
 
-    plt.savefig(f'results/{file}_center_of_mass_image.jpg')
-    remove_side_component_image.save(f'results/{file}_center_of_mass_image.jpg')
+    plt.savefig(f'results/{result_file_name}_center_of_mass_image.jpg')
+    remove_side_component_image.save(f'results/{result_file_name}_center_of_mass_image.jpg')
 
     plt.show()
 
 if __name__ == "__main__":
-   main(PATH_SOLDA, "solda")
-
+   image = open_image(PATH_SOLDA)
+   otsu_histogram(image)
