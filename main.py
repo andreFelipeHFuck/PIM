@@ -12,9 +12,11 @@ from PIL import Image
 
 from collections import deque
 
-PATH_SOLDA = "solda.png"
-PATH_PARTICULA = "particulas_.png"
-PATH_BOLINHAS = "Fig9_43_GW.jpg"
+PATH_SOLDA = "images/solda.png"
+PATH_SOLDA_EX1 = "images/solda_ex1.png"
+PATH_SOLDA_EX2 = "images/solda_ex2.png"
+PATH_SOLDA_EX3 = "images/solda_ex3.png"
+
 
 def otsu_histogram(im:object):
     matplotlib.rcParams['font.size'] = 9
@@ -301,21 +303,21 @@ def main(path:str, result_file_name:str)->None:
 
     threshold_image = threshold(image)
 
-    threshold_image.save(f'results/{result_file_name}_binary_threshold.jpg')
+    threshold_image.save(f'results/{result_file_name}_binary_threshold.png')
 
     zero_image = zero_frame(threshold_image)
 
-    zero_image.save(f'results/{result_file_name}_zero_image.jpg')
+    zero_image.save(f'results/{result_file_name}_zero_image.png')
 
     (components_image, list_components) = segmentation_by_area(zero_image)
 
-    psudo_color(components_image ,f'results/{result_file_name}_components_threshold.jpg')
+    psudo_color(components_image ,f'results/{result_file_name}_components_threshold.png')
     
     list_components_side = list(identifica_side(components_image))
     # print(list_components_side)
 
     remove_side_component_image = remove_side_component(components_image, list_components_side)
-    remove_side_component_image.save(f'results/{result_file_name}_remove_side_component_image.jpg')
+    remove_side_component_image.save(f'results/{result_file_name}_remove_side_component_image.png')
 
     # print(max_component(remove_side_component_image, list_components))
 
@@ -332,11 +334,10 @@ def main(path:str, result_file_name:str)->None:
 
     plt.imshow(remove_side_component_image)
 
-    plt.savefig(f'results/{result_file_name}_center_of_mass_image.jpg')
-    remove_side_component_image.save(f'results/{result_file_name}_center_of_mass_image.jpg')
+    plt.savefig(f'results/{result_file_name}_center_of_mass_image.png')
+    remove_side_component_image.save(f'results/{result_file_name}_center_of_mass_image.png')
 
     plt.show()
 
 if __name__ == "__main__":
-   image = open_image(PATH_SOLDA)
-   otsu_histogram(image)
+   main(PATH_SOLDA_EX3, "solda_ex3")
