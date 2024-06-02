@@ -340,4 +340,5 @@ def main(path:str, result_file_name:str)->None:
     plt.show()
 
 if __name__ == "__main__":
-   main(PATH_SOLDA_EX3, "solda_ex3")
+   main(PATH_SOLDA, "solda")
+   
